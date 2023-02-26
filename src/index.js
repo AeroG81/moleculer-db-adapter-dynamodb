@@ -57,12 +57,14 @@ class DynamoDbAdapter {
     this.model.config({ dynamodb });
 
     if (this.opts.shouldCreateTable) {
-      await this.model.createTable().catch((err) => {
-        if (err.code === 'ResourceInUseException') {
-          return;
+      // console.log("INFO: Creating table for DynamoDB");
+      const tableName = this.model.log.fields.model;
+      await this.model.createTable({ tableName: { readCapacity: 10, writeCapacity: 5 } }, (err) => {
+        if (err){
+          if (err.code === 'ResourceInUseException') return;
+          else console.log("Error: " + err);
         }
-
-        throw err;
+        else console.log("Table created");
       });
     }
 
