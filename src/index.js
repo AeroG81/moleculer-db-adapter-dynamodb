@@ -60,7 +60,7 @@ class DynamoDbAdapter {
       // console.log("INFO: Creating table for DynamoDB");
       const tableName = this.model.log.fields.model;
       await this.model.createTable({ tableName: { readCapacity: 10, writeCapacity: 5 } }, (err) => {
-        if (err){
+        if (err) {
           if (err.code === 'ResourceInUseException') return;
           else console.log("Error: " + err);
         }
@@ -151,9 +151,13 @@ class DynamoDbAdapter {
    * @memberof DynamoDbAdapter
    */
   findByIds(idList) {
-    //TODO: this is very inefficient.  refactor
-
-    return this.model.scan().where(this.hashKey).in(idList).exec();
+    //TODO: ensure efficiency
+    return new Promise((resolve, reject) => {
+      this.model.getItems(idList, { ConsistentRead: true }, (err, entity) => {
+        if (err) reject(err);;
+        resolve(entity);
+      });
+    });
   }
 
   /**
@@ -236,8 +240,21 @@ class DynamoDbAdapter {
    *
    * @memberof DynamoDbAdapter
    */
-  async removeById(id) {
-    return this.model.destroy(id, { ReturnValues: 'ALL_OLD' });
+  async removeById(id, callback) {
+    return this.model.destroy(id, { ReturnValues: "ALL_OLD" }, callback);
+  }
+
+  /**
+ * Remove an entity by Key
+ *
+ * @param {any} hash
+ * @param {any} range
+ * @returns {ReturnType<import('dynamodb').Model['destroy']>}
+ *
+ * @memberof DynamoDbAdapter
+ */
+  async removeByKey(hash, range, callback) {
+    return this.model.destroy(hash, range, {}, callback);
   }
 
   /**
